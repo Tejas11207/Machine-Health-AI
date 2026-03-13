@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Machine Health AI — Industrial Predictive Maintenance Dashboard</title>
+    <meta name="description" content="AI-powered industrial machine health monitoring and predictive maintenance dashboard with real ML model, anomaly detection, and digital twin visualization">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- ═══════════════════ SUBTLE BG ═══════════════════ -->
+    <div class="bg-grid"></div>
+
+    <!-- ═══════════════════ ALERT BANNER ═══════════════════ -->
+    <div id="alert-banner" class="alert-banner hidden"></div>
+
+    <!-- ═══════════════════ HEADER ═══════════════════ -->
+    <header id="app-header">
+        <div class="header-left">
+            <div class="logo-icon">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                    <circle cx="16" cy="16" r="14" stroke="url(#grad1)" stroke-width="2.5"/>
+                    <path d="M10 16 L14 12 L18 18 L22 10" stroke="url(#grad1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="16" cy="16" r="3" fill="url(#grad1)"/>
+                    <defs><linearGradient id="grad1" x1="0" y1="0" x2="32" y2="32">
+                        <stop stop-color="#60a5fa"/><stop offset="1" stop-color="#3b82f6"/>
+                    </linearGradient></defs>
+                </svg>
+            </div>
+            <div>
+                <h1>Machine Health AI</h1>
+                <p class="subtitle">Predictive Maintenance Dashboard • Random Forest ML</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <div id="health-badge" class="badge badge-loading">
+                <span class="pulse-dot"></span>
+                <span id="health-text">Connecting…</span>
+            </div>
+            <div class="api-key-group">
+                <label for="api-key-input">API Key</label>
+                <input type="password" id="api-key-input" value="dev-api-key-001" placeholder="Enter API Key">
+            </div>
+        </div>
+    </header>
+
+    <!-- ═══════════════════ NAV TABS ═══════════════════ -->
+    <nav id="main-nav">
+        <button class="nav-tab active" data-tab="factory" id="nav-factory">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V7l5-4v18"/><path d="M19 21V11l-5-4"/><path d="M9 9h1"/><path d="M9 13h1"/><path d="M9 17h1"/></svg>
+            Factory Floor
+        </button>
+        <button class="nav-tab" data-tab="predict" id="nav-predict">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            Predict
+        </button>
+        <button class="nav-tab" data-tab="live" id="nav-live">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg>
+            Live Monitor
+        </button>
+        <button class="nav-tab" data-tab="upload" id="nav-upload">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Upload CSV
+        </button>
+        <button class="nav-tab" data-tab="twin" id="nav-twin">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            Digital Twin
+        </button>
+        <button class="nav-tab" data-tab="demo" id="nav-demo">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Demo
+        </button>
+        <button class="nav-tab" data-tab="batch" id="nav-batch">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            Batch
+        </button>
+        <button class="nav-tab" data-tab="feedback" id="nav-feedback">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Feedback
+        </button>
+        <button class="nav-tab" data-tab="quality" id="nav-quality">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+            Quality
+        </button>
+    </nav>
+
+    <!-- ═══════════════════ MAIN CONTENT ═══════════════════ -->
+    <main id="app-main">
+
+        <!-- ─── FACTORY FLOOR TAB ─── -->
+        <section id="tab-factory" class="tab-content active">
+            <div class="section-header">
+                <h2>🏭 Factory Floor Dashboard</h2>
+                <p>Real-time multi-machine monitoring — click any machine for details</p>
+            </div>
+            <div class="factory-summary-grid" id="factory-summary">
+                <div class="factory-stat-card">
+                    <div class="factory-stat-value" id="f-total">0</div>
+                    <div class="factory-stat-label">Total Machines</div>
+                </div>
+                <div class="factory-stat-card stat-healthy">
+                    <div class="factory-stat-value" id="f-healthy">0</div>
+                    <div class="factory-stat-label">Healthy</div>
+                </div>
+                <div class="factory-stat-card stat-warning">
+                    <div class="factory-stat-value" id="f-warning">0</div>
+                    <div class="factory-stat-label">Warning</div>
+                </div>
+                <div class="factory-stat-card stat-critical">
+                    <div class="factory-stat-value" id="f-critical">0</div>
+                    <div class="factory-stat-label">Critical</div>
+                </div>
+                <div class="factory-stat-card">
+                    <div class="factory-stat-value" id="f-avg-health">—</div>
+                    <div class="factory-stat-label">Avg Health</div>
+                </div>
+            </div>
+            <div class="factory-alerts-panel" id="factory-alerts"></div>
+            <div class="factory-machine-grid" id="factory-machines">
+                <div class="factory-empty-state">
+                    <p>🏭 No machines monitored yet.</p>
+                    <p style="color:var(--text-muted);font-size:0.85rem">Run a prediction, upload CSV, or start Demo mode to add machines.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── PREDICT TAB ─── -->
+        <section id="tab-predict" class="tab-content">
+            <div class="section-header">
+                <h2>Single Machine Prediction</h2>
+                <p>Enter sensor readings to assess failure risk using our trained Random Forest model</p>
+            </div>
+            <div class="predict-layout">
+                <form id="predict-form" class="card glass">
+                    <div class="form-grid">
+                        <div class="form-section">
+                            <h3>Machine Info</h3>
+                            <div class="field-row">
+                                <div class="field">
+                                    <label for="p-machine-id">Machine ID *</label>
+                                    <input type="text" id="p-machine-id" value="MACH-001" required>
+                                </div>
+                                <div class="field">
+                                    <label for="p-tenant-id">Tenant ID *</label>
+                                    <input type="text" id="p-tenant-id" value="plant_a" required>
+                                </div>
+                            </div>
+                            <div class="field-row">
+                                <div class="field">
+                                    <label for="p-machine-type">Machine Type</label>
+                                    <select id="p-machine-type">
+                                        <option value="general">General</option>
+                                        <option value="pump">Pump</option>
+                                        <option value="compressor">Compressor</option>
+                                        <option value="conveyor">Conveyor</option>
+                                        <option value="motor">Motor</option>
+                                        <option value="turbine">Turbine</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="p-criticality">Criticality</label>
+                                    <select id="p-criticality">
+                                        <option value="low">Low</option>
+                                        <option value="medium" selected>Medium</option>
+                                        <option value="high">High</option>
+                                        <option value="critical">Critical</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="field-row">
+                                <div class="field">
+                                    <label for="p-maint-days">Last Maintenance (days ago)</label>
+                                    <input type="number" id="p-maint-days" value="30" min="0" max="3650">
+                                </div>
+                                <div class="field">
+                                    <label for="p-age-months">Machine Age (months)</label>
+                                    <input type="number" id="p-age-months" value="24" min="0" max="1200">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-section">
+                            <h3>Sensor Readings</h3>
+                            <div class="field-row">
+                                <div class="field">
+                                    <label for="p-temp">Temperature (°C)</label>
+                                    <input type="number" id="p-temp" value="65" step="0.1" min="-50" max="500">
+                                    <span class="field-hint">Normal: 30–75°C</span>
+                                </div>
+                                <div class="field">
+                                    <label for="p-vib">Vibration (mm/s)</label>
+                                    <input type="number" id="p-vib" value="3.5" step="0.1" min="0" max="100">
+                                    <span class="field-hint">Normal: 0.5–7 mm/s</span>
+                                </div>
+                            </div>
+                            <div class="field-row">
+                                <div class="field">
+                                    <label for="p-pressure">Pressure (bar)</label>
+                                    <input type="number" id="p-pressure" value="5.0" step="0.1" min="0" max="500">
+                                    <span class="field-hint">Normal: 2–8 bar</span>
+                                </div>
+                                <div class="field">
+                                    <label for="p-rpm">RPM</label>
+                                    <input type="number" id="p-rpm" value="1500" step="10" min="0" max="50000">
+                                    <span class="field-hint">Normal: 800–2200</span>
+                                </div>
+                            </div>
+                            <div class="field-row">
+                                <div class="field">
+                                    <label for="p-load">Load (%)</label>
+                                    <input type="number" id="p-load" value="50" step="1" min="0" max="150">
+                                    <span class="field-hint">Normal: 10–85%</span>
+                                </div>
+                                <div class="field">
+                                    <label for="p-voltage">Voltage (V)</label>
+                                    <input type="number" id="p-voltage" value="230" step="1" min="0" max="10000">
+                                    <span class="field-hint">Normal: 210–250V</span>
+                                </div>
+                            </div>
+                            <div class="field-row">
+                                <div class="field">
+                                    <label for="p-current">Current (A)</label>
+                                    <input type="number" id="p-current" value="10" step="0.1" min="0" max="5000">
+                                    <span class="field-hint">Normal: 2–18A</span>
+                                </div>
+                                <div class="field">
+                                    <label for="p-hours">Operating Hours</label>
+                                    <input type="number" id="p-hours" value="5000" step="100" min="0" max="500000">
+                                    <span class="field-hint">Normal: 0–15000</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="predict-btn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                        Run ML Prediction
+                    </button>
+                </form>
+
+                <div id="predict-result" class="result-panel hidden">
+                    <div class="result-header">
+                        <h3>🧠 ML Prediction Result</h3>
+                        <span id="result-pred-id" class="mono"></span>
+                    </div>
+
+                    <!-- Health Score + Risk Gauge side by side -->
+                    <div class="dual-gauge-container">
+                        <div class="health-gauge-wrap">
+                            <div class="health-circle" id="health-circle">
+                                <svg viewBox="0 0 120 120">
+                                    <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10"/>
+                                    <circle cx="60" cy="60" r="52" fill="none" stroke="url(#healthGrad)" stroke-width="10" stroke-linecap="round" id="health-arc"
+                                        stroke-dasharray="0 326.7" transform="rotate(-90 60 60)"/>
+                                    <defs><linearGradient id="healthGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" stop-color="#ef4444"/><stop offset="50%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#10b981"/>
+                                    </linearGradient></defs>
+                                </svg>
+                                <div class="health-value" id="health-value">—</div>
+                                <div class="health-label">Health Score</div>
+                            </div>
+                            <div class="health-status" id="health-status-text">—</div>
+                        </div>
+                        <div class="risk-gauge-wrap">
+                            <div class="risk-gauge" id="risk-gauge">
+                                <svg viewBox="0 0 200 120" class="gauge-svg">
+                                    <path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="14" stroke-linecap="round"/>
+                                    <path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="url(#gaugeGrad)" stroke-width="14" stroke-linecap="round" id="gauge-arc" stroke-dasharray="0 251.3"/>
+                                    <defs><linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" stop-color="#00E676"/><stop offset="50%" stop-color="#FFC107"/><stop offset="100%" stop-color="#FF1744"/>
+                                    </linearGradient></defs>
+                                </svg>
+                                <div class="gauge-value" id="gauge-value">0%</div>
+                                <div class="gauge-label">Failure Risk</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Risk Meter Bar -->
+                    <div class="risk-meter-container">
+                        <div class="risk-meter-label">Risk Level</div>
+                        <div class="risk-meter">
+                            <div class="risk-meter-fill" id="risk-meter-fill"></div>
+                            <div class="risk-meter-indicator" id="risk-meter-indicator"></div>
+                        </div>
+                        <div class="risk-meter-labels">
+                            <span>Low</span><span>Medium</span><span>High</span><span>Critical</span>
+                        </div>
+                    </div>
+
+                    <!-- Result Cards -->
+                    <div class="result-cards">
+                        <div class="result-card">
+                            <div class="result-card-icon">⚙️</div>
+                            <div class="result-card-label">Failure Cause</div>
+                            <div class="result-card-value" id="result-cause">—</div>
+                        </div>
+                        <div class="result-card">
+                            <div class="result-card-icon">🎯</div>
+                            <div class="result-card-label">ML Confidence</div>
+                            <div class="result-card-value" id="result-confidence">—</div>
+                        </div>
+                        <div class="result-card">
+                            <div class="result-card-icon">⏱️</div>
+                            <div class="result-card-label">Remaining Useful Life</div>
+                            <div class="result-card-value" id="result-rul">—</div>
+                        </div>
+                        <div class="result-card">
+                            <div class="result-card-icon">📊</div>
+                            <div class="result-card-label">Risk Level</div>
+                            <div class="result-card-value" id="result-risk-level">—</div>
+                        </div>
+                        <div class="result-card">
+                            <div class="result-card-icon">🔬</div>
+                            <div class="result-card-label">Failure Type (ML)</div>
+                            <div class="result-card-value" id="result-failure-type">—</div>
+                        </div>
+                        <div class="result-card">
+                            <div class="result-card-icon">📈</div>
+                            <div class="result-card-label">Failure Probability</div>
+                            <div class="result-card-value" id="result-fail-prob">—</div>
+                        </div>
+                    </div>
+
+                    <!-- Anomaly Alerts -->
+                    <div id="anomaly-alerts" class="anomaly-section hidden"></div>
+
+                    <!-- Recommendation -->
+                    <div class="recommendation-box" id="result-recommendation"></div>
+
+                    <!-- RUL Visualization -->
+                    <div class="rul-visual" id="rul-visual">
+                        <div class="rul-bar-label">Remaining Useful Life</div>
+                        <div class="rul-bar">
+                            <div class="rul-bar-fill" id="rul-bar-fill"></div>
+                        </div>
+                        <div class="rul-bar-value" id="rul-bar-value">— hours</div>
+                    </div>
+
+                    <!-- AI Explainability -->
+                    <div class="feature-importance" id="result-features"></div>
+
+                    <!-- Class Probabilities -->
+                    <div class="class-probabilities" id="result-class-probs"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── LIVE MONITOR TAB ─── -->
+        <section id="tab-live" class="tab-content">
+            <div class="section-header">
+                <h2>📡 Live Sensor Monitoring</h2>
+                <p>Real-time sensor simulation — values update every 5 seconds from your Predict form inputs</p>
+            </div>
+            <div class="live-controls card glass">
+                <button type="button" class="btn btn-primary" id="live-start-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    Start Live Monitoring
+                </button>
+                <button type="button" class="btn btn-ghost" id="live-stop-btn" disabled>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                    Stop
+                </button>
+                <div class="live-status" id="live-status">⚪ Stopped</div>
+                <div class="live-input-hint" id="live-input-hint" style="display:none">📊 Simulating sensor values around your Predict form inputs — updating every 5 seconds</div>
+            </div>
+            <div class="live-gauges-grid" id="live-gauges">
+                <div class="live-gauge-card" data-sensor="temperature_celsius">
+                    <div class="live-gauge-icon">🌡️</div>
+                    <div class="live-gauge-name">Temperature</div>
+                    <div class="live-gauge-value" id="lg-temp">—</div>
+                    <div class="live-gauge-unit">°C</div>
+                    <div class="live-gauge-bar"><div class="live-gauge-fill" id="lgf-temp"></div></div>
+                </div>
+                <div class="live-gauge-card" data-sensor="vibration_mms">
+                    <div class="live-gauge-icon">📳</div>
+                    <div class="live-gauge-name">Vibration</div>
+                    <div class="live-gauge-value" id="lg-vib">—</div>
+                    <div class="live-gauge-unit">mm/s</div>
+                    <div class="live-gauge-bar"><div class="live-gauge-fill" id="lgf-vib"></div></div>
+                </div>
+                <div class="live-gauge-card" data-sensor="pressure_bar">
+                    <div class="live-gauge-icon">💨</div>
+                    <div class="live-gauge-name">Pressure</div>
+                    <div class="live-gauge-value" id="lg-pressure">—</div>
+                    <div class="live-gauge-unit">bar</div>
+                    <div class="live-gauge-bar"><div class="live-gauge-fill" id="lgf-pressure"></div></div>
+                </div>
+                <div class="live-gauge-card" data-sensor="rpm">
+                    <div class="live-gauge-icon">⚙️</div>
+                    <div class="live-gauge-name">RPM</div>
+                    <div class="live-gauge-value" id="lg-rpm">—</div>
+                    <div class="live-gauge-unit">RPM</div>
+                    <div class="live-gauge-bar"><div class="live-gauge-fill" id="lgf-rpm"></div></div>
+                </div>
+                <div class="live-gauge-card" data-sensor="load_percent">
+                    <div class="live-gauge-icon">🏋️</div>
+                    <div class="live-gauge-name">Load</div>
+                    <div class="live-gauge-value" id="lg-load">—</div>
+                    <div class="live-gauge-unit">%</div>
+                    <div class="live-gauge-bar"><div class="live-gauge-fill" id="lgf-load"></div></div>
+                </div>
+                <div class="live-gauge-card" data-sensor="voltage_v">
+                    <div class="live-gauge-icon">⚡</div>
+                    <div class="live-gauge-name">Voltage</div>
+                    <div class="live-gauge-value" id="lg-voltage">—</div>
+                    <div class="live-gauge-unit">V</div>
+                    <div class="live-gauge-bar"><div class="live-gauge-fill" id="lgf-voltage"></div></div>
+                </div>
+                <div class="live-gauge-card" data-sensor="current_a">
+                    <div class="live-gauge-icon">🔌</div>
+                    <div class="live-gauge-name">Current</div>
+                    <div class="live-gauge-value" id="lg-current">—</div>
+                    <div class="live-gauge-unit">A</div>
+                    <div class="live-gauge-bar"><div class="live-gauge-fill" id="lgf-current"></div></div>
+                </div>
+                <div class="live-gauge-card" data-sensor="operating_hours">
+                    <div class="live-gauge-icon">🕐</div>
+                    <div class="live-gauge-name">Op. Hours</div>
+                    <div class="live-gauge-value" id="lg-hours">—</div>
+                    <div class="live-gauge-unit">hrs</div>
+                    <div class="live-gauge-bar"><div class="live-gauge-fill" id="lgf-hours"></div></div>
+                </div>
+            </div>
+            <!-- Live Prediction Summary -->
+            <div class="live-prediction card glass" id="live-prediction" style="display:none">
+                <h3>Live Prediction</h3>
+                <div class="live-pred-grid">
+                    <div class="live-pred-item"><span class="label">Risk</span><span id="lp-risk">—</span></div>
+                    <div class="live-pred-item"><span class="label">Health</span><span id="lp-health">—</span></div>
+                    <div class="live-pred-item"><span class="label">Cause</span><span id="lp-cause">—</span></div>
+                    <div class="live-pred-item"><span class="label">RUL</span><span id="lp-rul">—</span></div>
+                    <div class="live-pred-item"><span class="label">Confidence</span><span id="lp-conf">—</span></div>
+                    <div class="live-pred-item"><span class="label">Status</span><span id="lp-status">—</span></div>
+                </div>
+            </div>
+            <!-- Trend Graphs -->
+            <div class="trend-graphs">
+                <div class="card glass"><div id="chart-temp" class="trend-chart"></div></div>
+                <div class="card glass"><div id="chart-vib" class="trend-chart"></div></div>
+                <div class="card glass"><div id="chart-pressure" class="trend-chart"></div></div>
+                <div class="card glass"><div id="chart-rpm" class="trend-chart"></div></div>
+                <div class="card glass"><div id="chart-risk" class="trend-chart"></div></div>
+                <div class="card glass"><div id="chart-health" class="trend-chart"></div></div>
+            </div>
+        </section>
+
+        <!-- ─── UPLOAD TAB ─── -->
+        <section id="tab-upload" class="tab-content">
+            <div class="section-header">
+                <h2>📤 CSV Data Upload</h2>
+                <p>Upload sensor data CSV for batch machine health prediction</p>
+            </div>
+            <div class="card glass">
+                <div class="csv-dropzone" id="csv-dropzone">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <h3>Drop CSV file here or click to browse</h3>
+                    <p>Supports columns: temperature, vibration, pressure, rpm, load, voltage, current, operating_hours</p>
+                    <input type="file" id="csv-file-input" accept=".csv" hidden>
+                    <button type="button" class="btn btn-primary" id="csv-browse-btn">Browse Files</button>
+                </div>
+                <div class="csv-example">
+                    <h4>Example CSV Format:</h4>
+                    <pre><code>temperature,vibration,pressure,rpm,load,voltage,current,operating_hours
+36,3.5,5.0,2100,46,230,10,5000
+40,4.1,5.4,2150,52,231,11,5100
+85,12.0,3.2,2800,90,245,22,28000</code></pre>
+                </div>
+            </div>
+            <div id="csv-result" class="hidden"></div>
+        </section>
+
+        <!-- ─── DIGITAL TWIN TAB ─── -->
+        <section id="tab-twin" class="tab-content">
+            <div class="section-header">
+                <h2>🖥️ Digital Twin Visualization</h2>
+                <p>Virtual machine representation with real-time sensor highlighting</p>
+            </div>
+            <div class="twin-container card glass">
+                <div class="twin-machine" id="twin-machine">
+                    <svg viewBox="0 0 600 400" id="twin-svg" class="twin-svg">
+                        <!-- Machine Body -->
+                        <rect x="150" y="100" width="300" height="200" rx="12" fill="rgba(99,102,241,0.1)" stroke="var(--accent)" stroke-width="2"/>
+                        <text x="300" y="85" text-anchor="middle" fill="var(--text-secondary)" font-size="14" font-weight="600">INDUSTRIAL MOTOR</text>
+
+                        <!-- Motor Core -->
+                        <circle cx="300" cy="200" r="60" fill="rgba(34,211,238,0.08)" stroke="var(--cyan)" stroke-width="1.5" id="twin-core"/>
+                        <circle cx="300" cy="200" r="35" fill="rgba(99,102,241,0.12)" stroke="var(--accent)" stroke-width="1" id="twin-rotor"/>
+                        <circle cx="300" cy="200" r="8" fill="var(--accent)"/>
+
+                        <!-- Shaft -->
+                        <rect x="360" y="192" width="120" height="16" rx="4" fill="rgba(148,163,184,0.15)" stroke="var(--text-muted)" stroke-width="1"/>
+                        <text x="420" y="225" text-anchor="middle" fill="var(--text-muted)" font-size="10">SHAFT</text>
+
+                        <!-- Bearing Left -->
+                        <circle cx="170" cy="200" r="18" fill="none" stroke="var(--amber)" stroke-width="2" id="twin-bearing-l"/>
+                        <circle cx="170" cy="200" r="6" fill="var(--amber)" opacity="0.5"/>
+                        <text x="170" y="235" text-anchor="middle" fill="var(--text-muted)" font-size="9">BEARING</text>
+
+                        <!-- Bearing Right -->
+                        <circle cx="430" cy="200" r="18" fill="none" stroke="var(--amber)" stroke-width="2" id="twin-bearing-r"/>
+                        <circle cx="430" cy="200" r="6" fill="var(--amber)" opacity="0.5"/>
+                        <text x="430" y="235" text-anchor="middle" fill="var(--text-muted)" font-size="9">BEARING</text>
+
+                        <!-- Sensor Points -->
+                        <g id="twin-sensor-temp">
+                            <circle cx="200" cy="120" r="12" fill="rgba(239,68,68,0.2)" stroke="#ef4444" stroke-width="2"/>
+                            <text x="200" y="124" text-anchor="middle" fill="#ef4444" font-size="11" font-weight="bold">T</text>
+                            <text x="200" y="108" text-anchor="middle" fill="var(--text-muted)" font-size="8" id="twin-temp-val">—°C</text>
+                        </g>
+                        <g id="twin-sensor-vib">
+                            <circle cx="400" cy="120" r="12" fill="rgba(245,158,11,0.2)" stroke="#f59e0b" stroke-width="2"/>
+                            <text x="400" y="124" text-anchor="middle" fill="#f59e0b" font-size="11" font-weight="bold">V</text>
+                            <text x="400" y="108" text-anchor="middle" fill="var(--text-muted)" font-size="8" id="twin-vib-val">—mm/s</text>
+                        </g>
+                        <g id="twin-sensor-rpm">
+                            <circle cx="300" cy="280" r="12" fill="rgba(34,211,238,0.2)" stroke="#22d3ee" stroke-width="2"/>
+                            <text x="300" y="284" text-anchor="middle" fill="#22d3ee" font-size="11" font-weight="bold">R</text>
+                            <text x="300" y="310" text-anchor="middle" fill="var(--text-muted)" font-size="8" id="twin-rpm-val">—RPM</text>
+                        </g>
+                        <g id="twin-sensor-load">
+                            <circle cx="150" cy="280" r="12" fill="rgba(16,185,129,0.2)" stroke="#10b981" stroke-width="2"/>
+                            <text x="150" y="284" text-anchor="middle" fill="#10b981" font-size="11" font-weight="bold">L</text>
+                            <text x="150" y="310" text-anchor="middle" fill="var(--text-muted)" font-size="8" id="twin-load-val">—%</text>
+                        </g>
+                        <g id="twin-sensor-pressure">
+                            <circle cx="450" cy="280" r="12" fill="rgba(139,92,246,0.2)" stroke="#8b5cf6" stroke-width="2"/>
+                            <text x="450" y="284" text-anchor="middle" fill="#8b5cf6" font-size="11" font-weight="bold">P</text>
+                            <text x="450" y="310" text-anchor="middle" fill="var(--text-muted)" font-size="8" id="twin-pressure-val">—bar</text>
+                        </g>
+
+                        <!-- Power input -->
+                        <rect x="120" y="155" width="30" height="90" rx="4" fill="rgba(245,158,11,0.08)" stroke="var(--amber)" stroke-width="1"/>
+                        <text x="135" y="195" text-anchor="middle" fill="var(--amber)" font-size="9" transform="rotate(-90 135 195)">POWER</text>
+
+                        <!-- Cooling -->
+                        <rect x="200" y="300" width="200" height="30" rx="4" fill="rgba(34,211,238,0.05)" stroke="var(--cyan)" stroke-width="1" stroke-dasharray="4"/>
+                        <text x="300" y="320" text-anchor="middle" fill="var(--cyan)" font-size="9">COOLING SYSTEM</text>
+                    </svg>
+                </div>
+                <div class="twin-status-panel" id="twin-status">
+                    <h3>Machine Status</h3>
+                    <div class="twin-info-grid">
+                        <div class="twin-info-item"><span>Health</span><span id="twin-health">—</span></div>
+                        <div class="twin-info-item"><span>Risk Level</span><span id="twin-risk">—</span></div>
+                        <div class="twin-info-item"><span>Primary Cause</span><span id="twin-cause">—</span></div>
+                        <div class="twin-info-item"><span>RUL</span><span id="twin-rul">—</span></div>
+                    </div>
+                    <p style="color:var(--text-muted);font-size:0.8rem;margin-top:12px">Run a prediction or start live monitoring to update the digital twin</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── DEMO TAB ─── -->
+        <section id="tab-demo" class="tab-content">
+            <div class="section-header">
+                <h2>🎬 Hackathon Demo Mode</h2>
+                <p>Live simulation — Watch machines gradually degrade and trigger alerts</p>
+            </div>
+            <div class="demo-panel card glass">
+                <div class="demo-controls">
+                    <button type="button" class="btn btn-primary btn-lg" id="demo-start-btn">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        Start Demo Simulation
+                    </button>
+                    <button type="button" class="btn btn-ghost btn-lg" id="demo-stop-btn" disabled>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                        Stop Demo
+                    </button>
+                </div>
+                <div class="demo-status" id="demo-status">
+                    <span class="demo-status-dot"></span>
+                    <span>Ready — Click Start to begin the simulation</span>
+                </div>
+                <div class="demo-info">
+                    <h4>What happens during the demo:</h4>
+                    <ul>
+                        <li>🏭 3 machines are created: <strong>PUMP</strong>, <strong>COMPRESSOR</strong>, <strong>TURBINE</strong></li>
+                        <li>📈 PUMP gradually degrades over time — its sensors worsen</li>
+                        <li>⚠️ TURBINE starts degrading after a delay</li>
+                        <li>🔔 Watch alerts appear as thresholds are crossed</li>
+                        <li>📊 Switch to Factory Floor tab to see machine status cards update live</li>
+                    </ul>
+                </div>
+            </div>
+            <div id="demo-log" class="demo-log card glass" style="display:none">
+                <h3>Demo Event Log</h3>
+                <div id="demo-log-entries"></div>
+            </div>
+        </section>
+
+        <!-- ─── BATCH TAB ─── -->
+        <section id="tab-batch" class="tab-content">
+            <div class="section-header">
+                <h2>Batch Prediction</h2>
+                <p>Predict failure risk for multiple machines at once</p>
+            </div>
+            <div class="batch-mode-toggle">
+                <button type="button" class="batch-mode-btn active" id="batch-mode-form" data-mode="form">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    Form Builder
+                </button>
+                <button type="button" class="batch-mode-btn" id="batch-mode-json" data-mode="json">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                    JSON Editor
+                </button>
+            </div>
+            <div id="batch-form-mode">
+                <div class="card glass batch-presets-card">
+                    <h3>Quick Add Preset Machine</h3>
+                    <p class="preset-hint">Click a preset to instantly add a pre-configured machine to the list</p>
+                    <div class="preset-grid">
+                        <button type="button" class="preset-btn" data-preset="pump"><span class="preset-icon">🔧</span><span class="preset-name">Pump</span><span class="preset-desc">High temp, high load</span></button>
+                        <button type="button" class="preset-btn" data-preset="compressor"><span class="preset-icon">⚙️</span><span class="preset-name">Compressor</span><span class="preset-desc">Medium load, steady</span></button>
+                        <button type="button" class="preset-btn" data-preset="conveyor"><span class="preset-icon">🏭</span><span class="preset-name">Conveyor</span><span class="preset-desc">Low RPM, light load</span></button>
+                        <button type="button" class="preset-btn" data-preset="turbine"><span class="preset-icon">🌀</span><span class="preset-name">Turbine</span><span class="preset-desc">High RPM, critical</span></button>
+                        <button type="button" class="preset-btn" data-preset="motor"><span class="preset-icon">⚡</span><span class="preset-name">Motor</span><span class="preset-desc">Electrical, standard</span></button>
+                    </div>
+                </div>
+                <div class="card glass">
+                    <div class="batch-add-header"><h3>Add Machine Manually</h3><button type="button" class="btn btn-sm btn-ghost" id="batch-clear-form">Clear Form</button></div>
+                    <div class="batch-form-grid">
+                        <div class="batch-form-section">
+                            <h4>Machine Info</h4>
+                            <div class="batch-field-row">
+                                <div class="field"><label for="b-machine-id">Machine ID *</label><input type="text" id="b-machine-id" placeholder="e.g. PUMP-01" required></div>
+                                <div class="field"><label for="b-tenant-id">Tenant ID *</label><input type="text" id="b-tenant-id" value="plant_a"></div>
+                            </div>
+                            <div class="batch-field-row">
+                                <div class="field"><label for="b-criticality">Criticality</label><select id="b-criticality"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div>
+                                <div class="field"><label for="b-machine-type">Machine Type</label><select id="b-machine-type"><option value="general">General</option><option value="pump">Pump</option><option value="compressor">Compressor</option><option value="conveyor">Conveyor</option><option value="motor">Motor</option><option value="turbine">Turbine</option></select></div>
+                            </div>
+                        </div>
+                        <div class="batch-form-section">
+                            <h4>Sensor Readings</h4>
+                            <div class="batch-field-row three-col">
+                                <div class="field"><label for="b-temp">Temp (°C)</label><input type="number" id="b-temp" value="65" step="0.1"></div>
+                                <div class="field"><label for="b-vib">Vibration (mm/s)</label><input type="number" id="b-vib" value="3.5" step="0.1"></div>
+                                <div class="field"><label for="b-pressure">Pressure (bar)</label><input type="number" id="b-pressure" value="5.0" step="0.1"></div>
+                            </div>
+                            <div class="batch-field-row three-col">
+                                <div class="field"><label for="b-rpm">RPM</label><input type="number" id="b-rpm" value="1500" step="10"></div>
+                                <div class="field"><label for="b-load">Load (%)</label><input type="number" id="b-load" value="50" step="1"></div>
+                                <div class="field"><label for="b-voltage">Voltage (V)</label><input type="number" id="b-voltage" value="230" step="1"></div>
+                            </div>
+                            <div class="batch-field-row three-col">
+                                <div class="field"><label for="b-current">Current (A)</label><input type="number" id="b-current" value="10" step="0.1"></div>
+                                <div class="field"><label for="b-hours">Op. Hours</label><input type="number" id="b-hours" value="5000" step="100"></div>
+                                <div class="field"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-add-machine" id="batch-add-btn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Add to Batch List
+                    </button>
+                </div>
+                <div class="card glass" id="batch-list-card" style="display:none;">
+                    <div class="batch-list-header"><h3>Batch List <span class="batch-count" id="batch-count">0</span></h3><button type="button" class="btn btn-sm btn-ghost btn-danger-ghost" id="batch-clear-all">Clear All</button></div>
+                    <div class="batch-table-wrap">
+                        <table class="batch-table" id="batch-table">
+                            <thead><tr><th>#</th><th>Machine ID</th><th>Tenant</th><th>Criticality</th><th>Temp</th><th>Vibr.</th><th>RPM</th><th>Load</th><th></th></tr></thead>
+                            <tbody id="batch-table-body"></tbody>
+                        </table>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="batch-submit-btn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                        Run Batch Prediction
+                    </button>
+                </div>
+            </div>
+            <div id="batch-json-mode" style="display:none;">
+                <div class="card glass">
+                    <div class="batch-editor-header"><h3>Machine Data (JSON)</h3><button type="button" class="btn btn-sm btn-ghost" id="batch-load-sample">Load Sample Data</button></div>
+                    <textarea id="batch-json" class="code-textarea" rows="14" spellcheck="false" placeholder='Paste batch JSON here or click "Load Sample Data"...'></textarea>
+                    <button type="button" class="btn btn-primary" id="batch-submit-json-btn">Run Batch Prediction</button>
+                </div>
+            </div>
+            <div id="batch-result" class="hidden">
+                <div class="batch-summary card glass" id="batch-summary"></div>
+                <div id="batch-cards"></div>
+            </div>
+        </section>
+
+        <!-- ─── FEEDBACK TAB ─── -->
+        <section id="tab-feedback" class="tab-content">
+            <div class="section-header">
+                <h2>Operator Feedback</h2>
+                <p>Report actual outcomes to improve model accuracy over time</p>
+            </div>
+            <form id="feedback-form" class="card glass">
+                <div class="form-grid">
+                    <div class="form-section">
+                        <h3>Prediction Reference</h3>
+                        <div class="field-row">
+                            <div class="field"><label for="f-pred-id">Prediction ID *</label><input type="text" id="f-pred-id" placeholder="pred_xxxxxxxxxxxx" required></div>
+                            <div class="field"><label for="f-machine-id">Machine ID *</label><input type="text" id="f-machine-id" placeholder="MACH-001" required></div>
+                        </div>
+                        <div class="field-row">
+                            <div class="field"><label for="f-tenant-id">Tenant ID *</label><input type="text" id="f-tenant-id" value="plant_a" required></div>
+                        </div>
+                    </div>
+                    <div class="form-section">
+                        <h3>Actual Outcome</h3>
+                        <div class="field-row">
+                            <div class="field"><label for="f-failure">Did failure occur? *</label><select id="f-failure" required><option value="true">Yes — failure occurred</option><option value="false">No — machine is fine</option></select></div>
+                            <div class="field"><label for="f-cause">Actual Cause (if failed)</label><select id="f-cause"><option value="">— Select —</option><option value="bearing_wear">Bearing Wear</option><option value="overheating">Overheating</option><option value="misalignment">Misalignment</option><option value="electrical_fault">Electrical Fault</option><option value="pressure_anomaly">Pressure Anomaly</option><option value="lubrication_failure">Lubrication Failure</option><option value="other">Other</option></select></div>
+                        </div>
+                        <div class="field-row"><div class="field"><label for="f-rul">Actual Remaining Life (hours)</label><input type="number" id="f-rul" step="0.1" min="0" placeholder="e.g. 140"></div></div>
+                        <div class="field full-width"><label for="f-notes">Operator Notes</label><textarea id="f-notes" rows="3" placeholder="Describe what was observed…" maxlength="2000"></textarea></div>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" id="feedback-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                    Submit Feedback
+                </button>
+            </form>
+            <div id="feedback-result" class="hidden"></div>
+        </section>
+
+        <!-- ─── MODEL QUALITY TAB ─── -->
+        <section id="tab-quality" class="tab-content">
+            <div class="section-header">
+                <h2>Model Quality Metrics</h2>
+                <p>Performance metrics computed from operator feedback</p>
+            </div>
+            <div class="quality-controls card glass">
+                <div class="field" style="max-width:300px"><label for="q-tenant">Filter by Tenant (optional)</label><input type="text" id="q-tenant" placeholder="e.g. plant_a"></div>
+                <button type="button" class="btn btn-primary" id="quality-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+                    Refresh Metrics
+                </button>
+            </div>
+            <div id="quality-result" class="hidden"></div>
+        </section>
+    </main>
+
+    <!-- ═══════════════════ TOAST CONTAINER ═══════════════════ -->
+    <div id="toast-container"></div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
